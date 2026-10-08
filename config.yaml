@@ -9,9 +9,11 @@ model:
   default: zai-org/GLM-5.3-Flash
   max_tokens: 16384                # well above GLM's native cap → never truncate
 
-# Cron agent must be able to run its tools (scripts/yta_send.py, poller) even
-# though there is no interactive user present to approve each flagged call.
+# Full auto-approve: both cron ticks AND interactive Telegram turns run their
+# tools without a human-in-the-loop prompt. (Still protected by Hermes'
+# hardline never-run blocklist + any user deny list.)
 approvals:
+  mode: off
   cron_mode: approve
 
 # Full tool stack for the deployed agent: web search/exa, browser-use, github.
