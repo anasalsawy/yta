@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
 # native deps in the venv, plus pkg-config/libssl which some wheels need.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash git curl ca-certificates build-essential \
-    pkg-config libssl-dev ffmpeg && \
+    pkg-config libssl-dev ffmpeg ripgrep && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root
