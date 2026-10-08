@@ -5,6 +5,10 @@ set -eu
 
 cd /opt/hermes
 
+# The Telegram chat with Anas is the agent's home conversation: cron reports land there and are
+# written into that chat's history (cron.mirror_delivery), so both sides are one agent.
+export TELEGRAM_HOME_CHANNEL="${TELEGRAM_HOME_CHANNEL:-${RESERVATIONS_TELEGRAM_CHAT_ID:-}}"
+
 # Register the 1-minute scan job (idempotent); tee its output to stdout.
 echo "=== registering cron job ==="
 /opt/hermes/register_cron.sh 2>&1 | tee -a /opt/hermes/logs/cron-register.log

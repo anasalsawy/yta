@@ -11,7 +11,10 @@ model:
   # truncation (the provider caps output anyway) - the real cause was the model spending
   # its whole budget on hidden "thinking" before every step, then needing up to 4 slow
   # continuations. Thinking is switched off below; this cap is ample for any reply.
-  max_tokens: 16384
+  # A reply or a tool call is never more than a few hundred tokens. Twice the model ran away to
+  # 16k tokens while handling a quote, then the box ran out of memory mid-task. A tight cap makes a
+  # runaway fail in seconds instead of minutes.
+  max_tokens: 4096
 
 # Request-level overrides for the Featherless endpoint (matched by base_url).
 # GLM's chat template skips the long hidden reasoning pass when enable_thinking=false:
@@ -38,3 +41,9 @@ browser:
   inactivity_timeout: 120
   extension_control:
     enabled: false
+
+# One agent: what the 1-minute customer job reports to Anas on Telegram is written into the
+# Telegram chat's own history, so when Anas replies ("tell him $289") the chat side already
+# knows the customer and the context.
+cron:
+  mirror_delivery: true

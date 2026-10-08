@@ -9,7 +9,7 @@ hermes cron create \
   --name "yta-scan" \
   --monitor-script yta_poll.py \
   --workdir /opt/hermes \
-  --deliver "telegram:${RESERVATIONS_TELEGRAM_CHAT_ID}" \
+  --deliver telegram \
   "every 1m" \
   "Customer threads that are WAITING for a reply are listed in the monitor
    output above (each line: channel, customer_id, name, status, last_message_id,
@@ -21,7 +21,9 @@ hermes cron create \
    2) reply on your own judgment with
       \`python scripts/yta_send.py <channel> <customer_id> '<text>'\`, or, if it
       needs a price/quote/booking or a decision you cannot make, tell the customer
-      it is with our senior desk and escalate to me on Telegram; if the message
+      it is with our senior desk, record it with
+      \`python scripts/yta_escalations.py add <channel> <customer_id> "<name>" "<what you need>"\`
+      and escalate to me on Telegram; if the message
       genuinely needs no reply (e.g. 'ok thanks'), run
       \`python scripts/yta_send.py --no-reply <last_message_id>\`.
    Do customers first. Do not create skills, edit memory or do any other

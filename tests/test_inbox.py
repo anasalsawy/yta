@@ -162,6 +162,22 @@ class InboxTests(unittest.TestCase):
         self.assertEqual(full["messages"][-1]["text"], "message 249")   # latest
         self.assertEqual({m["role"] for m in full["messages"]}, {"us", "customer"})
 
+    def test_escalation_ledger_links_the_two_doors(self):
+        import yta_escalations as esc
+        esc.LEDGER = inbox.STATE_DIR / "escalations.json"
+        a = esc.add("messenger", "555", "Curtis Major", "price TPA-SAT Oct 19-22, 2 pax")
+        esc.add("instagram_dm", "9001", "shaik_arshad", "price to Houston")
+        again = esc.add("messenger", "555", "Curtis Major", "price TPA-SAT Oct 19-22, 2 pax, economy")
+        self.assertEqual(a["id"], again["id"])                      # one open escalation per customer
+        out = esc.render(esc.open_rows())
+        self.assertIn("OPEN_ESCALATIONS 2", out)
+        self.assertIn("customer_id=555", out)
+        self.assertIn("economy", out)
+        esc.done(a["id"], "sent $289 total")
+        self.assertNotIn("Curtis", esc.render(esc.open_rows()))
+        esc.done(2, "sent")
+        self.assertEqual(esc.render(esc.open_rows()), "NO_OPEN_ESCALATIONS")
+
     def test_parse_time_formats(self):
         self.assertGreater(inbox.parse_time("2026-10-08T21:00:00+0000"), 1.7e9)
         self.assertGreater(inbox.parse_time(1791496741000), 1.7e9)
