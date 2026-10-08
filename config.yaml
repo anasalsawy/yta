@@ -13,3 +13,12 @@ model:
 # though there is no interactive user present to approve each flagged call.
 approvals:
   cron_mode: approve
+
+# Full tool stack for the deployed agent: web search/exa, browser-use, github.
+web:
+  backend: exa
+browser:
+  backend: browser-use
+  inactivity_timeout: 120
+  extension_control:
+    enabled: false
