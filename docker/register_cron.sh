@@ -11,17 +11,22 @@ hermes cron create \
   --workdir /opt/hermes \
   --deliver "telegram:${RESERVATIONS_TELEGRAM_CHAT_ID}" \
   "every 1m" \
-  "A customer message may have just arrived. Go CHECK everything and act on
-   your own judgment: run \`python scripts/yta_check.py\` to read the real
-   current state of ALL customer conversations (Facebook Messenger, Instagram
-   DMs, WhatsApp) with full thread history. Decide for each conversation
-   whether to reply, follow up, stay silent, or escalate to the owner (me)
-   on Telegram — base every decision on what you actually read, never invent
-   facts. Send any reply/follow-up yourself with
-   \`python scripts/yta_send.py <channel> <from_id> '<text>'\`. Escalate to me
-   any request for a price/quote/booking or a decision you cannot make alone.
-   Never quote or book yourself. Then send me a short Telegram notice of what
-   you found and did." \
+  "Customer threads that are WAITING for a reply are listed in the monitor
+   output above (each line: channel, customer_id, name, status, last_message_id,
+   and the customer's unanswered messages). SPEED MATTERS - a customer is
+   waiting on the other end. For EACH waiting thread, in order:
+   1) read just that thread: \`python scripts/yta_check.py <channel> <customer_id>\`
+      (lines marked US are what we already said - never repeat or contradict them);
+   2) reply on your own judgment with
+      \`python scripts/yta_send.py <channel> <customer_id> '<text>'\`, or, if it
+      needs a price/quote/booking or a decision you cannot make, tell the customer
+      it is with our senior desk and escalate to me on Telegram; if the message
+      genuinely needs no reply (e.g. 'ok thanks'), run
+      \`python scripts/yta_send.py --no-reply <last_message_id>\`.
+   Do customers first. Do not create skills, edit memory or do any other
+   housekeeping during this job. If the monitor says NO_UNANSWERED, answer with
+   exactly [SILENT]. Otherwise finish with a short Telegram notice to me of what
+   each customer said and what you did." \
   2>&1 | tee -a /opt/hermes/logs/cron-create.log
 
 echo "=== hermes cron list ==="

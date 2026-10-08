@@ -1,7 +1,6 @@
 #!/bin/sh
 # YTA stock-Hermes entrypoint (Render).
-# Boot: register the scan job, PRIME the poller seen-set so historical messages
-# are not re-surfaced on the first tick, then serve the gateway in the foreground.
+# Boot: register the scan job, show what is waiting, then serve the gateway in the foreground.
 set -eu
 
 cd /opt/hermes
@@ -10,12 +9,11 @@ cd /opt/hermes
 echo "=== registering cron job ==="
 /opt/hermes/register_cron.sh 2>&1 | tee -a /opt/hermes/logs/cron-register.log
 
-# Prime the seen-set: run the poller once, discard output. This marks every
-# already-existing history entry as seen so only genuinely NEW messages fire the
-# agent from now on (avoids flooding the first tick with all history).
-echo "=== priming poller seen-set (dedupe history) ==="
-python /opt/hermes/scripts/yta_poll.py >/dev/null 2>&1 || echo "[prime] poller warned; continuing"
-echo "[prime] done"
+# No priming step any more: the poller is state-based (a thread is "waiting" while the
+# customer spoke last), so a restart re-surfaces anything still unanswered instead of
+# silently marking it seen. One quick read here just logs what is waiting at boot.
+echo "=== waiting threads at boot ==="
+python /opt/hermes/scripts/yta_poll.py 2>&1 | head -40 || echo "[boot] poller warned; continuing"
 
 # Run the gateway in the foreground: Telegram home + cron ticker + agent.
 echo "=== launching gateway (foreground) ==="

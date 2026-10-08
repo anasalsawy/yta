@@ -7,7 +7,21 @@ model:
   provider: custom                 # OpenAI-compatible endpoint
   base_url: https://api.featherless.ai/v1
   default: zai-org/GLM-5.3-Flash
-  max_tokens: 262144               # = GLM-5.3-Flash native output cap → never throttle/truncate
+  # A customer reply is a few sentences. Asking for 262k output tokens did not stop
+  # truncation (the provider caps output anyway) - the real cause was the model spending
+  # its whole budget on hidden "thinking" before every step, then needing up to 4 slow
+  # continuations. Thinking is switched off below; this cap is ample for any reply.
+  max_tokens: 16384
+
+# Request-level overrides for the Featherless endpoint (matched by base_url).
+# GLM's chat template skips the long hidden reasoning pass when enable_thinking=false:
+# same voice, same replies, minutes faster per step. Set it to true to bring thinking back.
+custom_providers:
+  - name: featherless
+    base_url: https://api.featherless.ai/v1
+    extra_body:
+      chat_template_kwargs:
+        enable_thinking: false
 
 # Full auto-approve: both cron ticks AND interactive Telegram turns run their
 # tools without a human-in-the-loop prompt. (Still protected by Hermes'
