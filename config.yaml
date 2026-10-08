@@ -7,7 +7,7 @@ model:
   provider: custom                 # OpenAI-compatible endpoint
   base_url: https://api.featherless.ai/v1
   default: zai-org/GLM-5.3-Flash
-  max_tokens: 4096                 # avoid finish_reason='length' truncation
+  max_tokens: 16384                # well above GLM's native cap → never truncate
 
 # Cron agent must be able to run its tools (scripts/yta_send.py, poller) even
 # though there is no interactive user present to approve each flagged call.
