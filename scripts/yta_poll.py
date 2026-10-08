@@ -26,8 +26,8 @@ def render(waiting: list[dict]) -> str:
         last = t["pending"][-1]
         lines.append(f"- channel={t['channel']} customer_id={t['customer_id']} name=\"{t['customer_name']}\" "
                      f"status={inbox.bucket(t['waiting_s'])} last_message_id={last['id']}")
-        for m in t["pending"][-5:]:
-            text = (m["text"] or "(empty)").replace("\n", " ")[:400]
+        for m in t["pending"][-15:]:
+            text = (m["text"] or "(empty)").replace("\n", " ")[:300]
             lines.append(f"    customer @ {inbox.fmt_ts(m['ts'])}: {text}")
     return "\n".join(lines)
 

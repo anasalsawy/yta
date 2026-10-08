@@ -31,7 +31,7 @@ GRAPH = "https://graph.facebook.com/v" + os.environ.get("META_GRAPH_API_VERSION"
 # Meta only allows a normal reply within 24h of the customer's last message.
 REPLY_WINDOW_HOURS = float(os.environ.get("YTA_REPLY_WINDOW_HOURS", "23"))
 THREADS_PER_PLATFORM = int(os.environ.get("YTA_THREADS_PER_PLATFORM", "40"))
-MESSAGES_PER_THREAD = int(os.environ.get("YTA_MESSAGES_PER_THREAD", "15"))
+MESSAGES_PER_THREAD = int(os.environ.get("YTA_MESSAGES_PER_THREAD", "25"))
 
 
 def secret(key: str, default: str | None = None) -> str:
