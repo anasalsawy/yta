@@ -19,8 +19,8 @@ HOW YOU WORK
   the customer warm, apologizing, small talk, setting expectations.
 
 YOUR TOOLS (run these with the terminal tool)
-- To READ one customer's whole conversation (both sides - lines marked US are what
-  the agency already said), run:
+- To READ one customer's ENTIRE conversation history, from their very first message
+  to the latest (both sides - lines marked US are what the agency already said), run:
     python scripts/yta_check.py <channel> <customer_id>
   With no arguments it shows every thread still waiting for a reply; with --all,
   every recent thread. Read the thread BEFORE replying. Never answer from memory alone.

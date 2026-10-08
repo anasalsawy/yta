@@ -15,7 +15,8 @@ hermes cron create \
    output above (each line: channel, customer_id, name, status, last_message_id,
    and the customer's unanswered messages). SPEED MATTERS - a customer is
    waiting on the other end. For EACH waiting thread, in order:
-   1) read just that thread: \`python scripts/yta_check.py <channel> <customer_id>\`
+   1) read that customer's ENTIRE history, first message to last:
+      \`python scripts/yta_check.py <channel> <customer_id>\`
       (lines marked US are what we already said - never repeat or contradict them);
    2) reply on your own judgment with
       \`python scripts/yta_send.py <channel> <customer_id> '<text>'\`, or, if it

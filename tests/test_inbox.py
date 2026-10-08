@@ -139,6 +139,29 @@ class InboxTests(unittest.TestCase):
         self.assertIn("US: Sure! Which dates?", out)
         self.assertIn("waiting for our reply", out)
 
+    def test_full_history_follows_every_page(self):
+        # 250 messages over 3 pages, newest first like Graph
+        all_msgs = [msg(f"h{i}", "555" if i % 2 else PAGE, f"message {i}", 1000 - i) for i in range(250)]
+        all_msgs.reverse()
+        pages = [all_msgs[0:100], all_msgs[100:200], all_msgs[200:250]]
+
+        class Paged(FakeGraph):
+            def __call__(self, url, token=None, timeout=20):
+                if "/t_curtis/messages" in url:
+                    n = int(url.split("page=")[1]) if "page=" in url else 0
+                    nxt = f"https://graph.example/t_curtis/messages?page={n + 1}" if n + 1 < len(pages) else None
+                    return {"data": pages[n], "paging": {"next": nxt} if nxt else {}}
+                return super().__call__(url, token, timeout)
+
+        g = Paged(self.messenger, self.instagram)
+        thread = [t for t in inbox.all_threads(g) if t["conv"] == "t_curtis"][0]
+        full = inbox.full_history(thread, g)
+        self.assertEqual(len(full["messages"]), 250)
+        self.assertTrue(full["complete"])
+        self.assertEqual(full["messages"][0]["text"], "message 0")      # very first message
+        self.assertEqual(full["messages"][-1]["text"], "message 249")   # latest
+        self.assertEqual({m["role"] for m in full["messages"]}, {"us", "customer"})
+
     def test_parse_time_formats(self):
         self.assertGreater(inbox.parse_time("2026-10-08T21:00:00+0000"), 1.7e9)
         self.assertGreater(inbox.parse_time(1791496741000), 1.7e9)

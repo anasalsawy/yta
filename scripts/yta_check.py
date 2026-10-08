@@ -1,7 +1,7 @@
 """YTA check tool - read conversations (both sides) before replying. Sends nothing.
 
   python scripts/yta_check.py                      threads waiting for a reply (default)
-  python scripts/yta_check.py <channel> <customer_id>   one full thread
+  python scripts/yta_check.py <channel> <customer_id>   one thread - ENTIRE history, first message to last
   python scripts/yta_check.py --all                every recent thread
 
 Lines marked "US" are what the agency already said - never repeat or contradict them.
@@ -17,7 +17,10 @@ import yta_inbox as inbox  # noqa: E402
 
 
 def show(t: dict) -> None:
-    print(f"\n[THREAD] channel={t['channel']} customer_id={t['customer_id']} name=\"{t['customer_name']}\"")
+    scope = "entire history" if t.get("complete") else ("history (stopped at safety cap)" if "complete" in t
+                                                        else "recent messages")
+    print(f"\n[THREAD] channel={t['channel']} customer_id={t['customer_id']} name=\"{t['customer_name']}\" "
+          f"({len(t['messages'])} messages, {scope})")
     for m in t["messages"]:
         who = "US" if m["role"] == "us" else t["customer_name"]
         print(f"  {inbox.fmt_ts(m['ts'])} | {who}: {m['text'] or '(empty)'}  [id={m['id']}]")
@@ -36,7 +39,7 @@ def main(argv: list[str]) -> None:
         if not picked:
             print(f"No thread found for {channel} {cid}.")
         for t in picked:
-            show(t)
+            show(inbox.full_history(t))
         return
     picked = threads if "--all" in argv else inbox.unanswered(threads)
     print(f"=== {'ALL RECENT' if '--all' in argv else 'WAITING FOR REPLY'}: {len(picked)} thread(s) ===")

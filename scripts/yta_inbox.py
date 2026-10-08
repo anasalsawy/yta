@@ -179,6 +179,45 @@ def _whatsapp_threads() -> list[dict]:
     return list(by_chat.values())
 
 
+FULL_HISTORY_CAP = int(os.environ.get("YTA_FULL_HISTORY_CAP", "10000"))  # safety stop only
+
+
+def full_history(thread: dict, fetcher=fetch) -> dict:
+    """The ENTIRE conversation, first message to last, by following Graph paging.
+    WhatsApp threads come from the bridge and already hold everything it has."""
+    if thread["channel"] not in ("messenger", "instagram_dm") or not thread.get("conv"):
+        return thread
+    token = secret("FACEBOOK_PAGE_ACCESS_TKN")
+    ident = identity(token, fetcher)
+    ours = {x for x in (ident.get("page_id"), ident.get("ig_id")) if x}
+    usernames = {u for u in (ident.get("ig_username"),) if u}
+    fields = urllib.parse.quote("id,message,from,created_time,attachments", safe=",")
+    url = f"{GRAPH}/{thread['conv']}/messages?fields={fields}&limit=100"
+    msgs, seen = [], set()
+    while url and len(msgs) < FULL_HISTORY_CAP:
+        try:
+            page = fetcher(url, token)
+        except Exception as exc:
+            print(f"[inbox] full history for {thread['conv']}: {exc}", file=sys.stderr)
+            break
+        for m in page.get("data", []):
+            if m.get("id") in seen:
+                continue
+            seen.add(m.get("id"))
+            frm = m.get("from") or {}
+            who_us = str(frm.get("id", "")) in ours or (frm.get("username") or "") in usernames
+            text = (m.get("message") or "").strip()
+            if not text and (m.get("attachments") or {}).get("data"):
+                text = "(sent an attachment)"
+            msgs.append({"id": m.get("id", ""), "ts": parse_time(m.get("created_time")),
+                         "role": "us" if who_us else "customer", "text": text})
+        url = (page.get("paging") or {}).get("next")
+    if not msgs:
+        return thread  # keep the recent window rather than show nothing
+    msgs.sort(key=lambda x: (x["ts"], x["id"]))
+    return {**thread, "messages": msgs, "complete": not url}
+
+
 def all_threads(fetcher=fetch) -> list[dict]:
     token = secret("FACEBOOK_PAGE_ACCESS_TKN")
     ident = identity(token, fetcher)
