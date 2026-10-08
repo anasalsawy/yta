@@ -1,26 +1,15 @@
 #!/bin/sh
 # YTA stock-Hermes entrypoint (Render).
-# 1. Background: boot the Telegram gateway (agent's persistent home).
-# 2. Foreground: run the cron scheduler loop, which fires the 1-min scan job.
+# Stock pattern: the Hermes gateway process owns BOTH the Telegram home AND the
+# cron scheduler, so we just run it in the foreground. One process, no double-fire.
 set -eu
 
 cd /opt/hermes
 
-# Register the 1-minute scan job (idempotent) so first boot wires the poller.
-/opt/hermes/register_cron.sh > /opt/hermes/logs/cron-register.log 2>&1 || true
+# Register the 1-minute scan job (idempotent); tee its output to stdout.
+echo "=== registering cron job ==="
+/opt/hermes/register_cron.sh 2>&1 | tee -a /opt/hermes/logs/cron-register.log
 
-# Boot the gateway so the agent is reachable on Telegram immediately.
-hermes gateway run > /opt/hermes/logs/gateway.log 2>&1 &
-GATEWAY_PID=$!
-echo "[start] gateway launched pid=$GATEWAY_PID"
-
-# Wait for the cron scheduler (ridealong on the gateway) to be ready.
-sleep 5
-hermes cron status > /opt/hermes/logs/cron-status.log 2>&1 || true
-
-# Foreground scheduler loop: tick due jobs (the 1-min scan) once per iteration.
-echo "[start] cron tick loop starting"
-while true; do
-  hermes cron tick >> /opt/hermes/logs/cron.log 2>&1 || echo "[cron] tick error: $?" >> /opt/hermes/logs/cron.log
-  sleep 60
-done
+# Run the gateway in the foreground: Telegram home + cron ticker + agent.
+echo "=== launching gateway (foreground) ==="
+exec hermes gateway run 2>&1 | tee -a /opt/hermes/logs/gateway.log
