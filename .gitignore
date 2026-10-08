@@ -1,0 +1,7 @@
+# local runtime state / secrets — never committed
+.env
+scripts/state/
+docker/logs/
+logs/
+*.pyc
+__pycache__/
