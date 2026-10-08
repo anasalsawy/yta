@@ -11,11 +11,17 @@ hermes cron create \
   --workdir /opt/hermes \
   --deliver "telegram:${RESERVATIONS_TELEGRAM_CHAT_ID}" \
   "every 1m" \
-  "Process any NEW_MESSAGES per my operating instructions. For each new
-   customer message: read context, respond as the agency using
-   scripts/yta_send.py <channel> <from_id> '<text>', and escalate to the owner
-   (Telegram senior desk) any request for a price/quote/booking or a decision
-   I cannot make alone. Never quote or book myself." \
+  "A customer message may have just arrived. Go CHECK everything and act on
+   your own judgment: run \`python scripts/yta_check.py\` to read the real
+   current state of ALL customer conversations (Facebook Messenger, Instagram
+   DMs, WhatsApp) with full thread history. Decide for each conversation
+   whether to reply, follow up, stay silent, or escalate to the owner (me)
+   on Telegram — base every decision on what you actually read, never invent
+   facts. Send any reply/follow-up yourself with
+   \`python scripts/yta_send.py <channel> <from_id> '<text>'\`. Escalate to me
+   any request for a price/quote/booking or a decision you cannot make alone.
+   Never quote or book yourself. Then send me a short Telegram notice of what
+   you found and did." \
   2>&1 | tee -a /opt/hermes/logs/cron-create.log
 
 echo "=== hermes cron list ==="
