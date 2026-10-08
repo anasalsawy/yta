@@ -2,31 +2,32 @@ FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     HERMES_HOME=/opt/hermes \
+    HERMES_INSTALL_DIR=/opt/hermes/hermes-agent \
+    PATH="/opt/hermes/hermes-agent/.hermes/bin:$PATH" \
     PIP_NO_CACHE_DIR=1
 
-# System deps for git install + runtime
+# System deps: bash (installer needs it), git, curl, build toolchain for a few
+# native deps in the venv, plus pkg-config/libssl which some wheels need.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl ca-certificates && \
+    bash git curl ca-certificates build-essential \
+    pkg-config libssl-dev ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/hermes
+WORKDIR /root
 
-# Prompt + scan/send scripts are baked in (system_prompt.md under prompts/)
+# Install the official stock Hermes (uv-managed source tree). The installer
+# refuses to pip-build a wheel, so we use its own supported path.
+RUN curl -fsSL https://hermes-agent.nousresearch.com/install.sh -o /tmp/install-hermes.sh && \
+    bash /tmp/install-hermes.sh
+
+# Bake the YTA config, system prompt, and scan/send scripts into the Hermes home.
+COPY config.yaml /opt/hermes/config.yaml
 COPY prompts/system_prompt.md /opt/hermes/prompts/system_prompt.md
 COPY scripts/yta_poll.py /opt/hermes/scripts/yta_poll.py
 COPY scripts/yta_send.py /opt/hermes/scripts/yta_send.py
-COPY config.yaml /opt/hermes/config.yaml
-
-# Install stock Hermes (hermes-agent) from the upstream git repo (main branch)
-RUN pip install --upgrade pip && \
-    pip install "git+https://github.com/NousResearch/hermes-agent.git@main"
-
-# Boot entrypoint: register the 1-min scan job, start the gateway (Telegram
-# home) in the background, then run the cron scheduler loop in the foreground.
-# Uses HERMES_HOME for config/env. Secrets come from Render env vars, not image.
 COPY docker/start.sh /opt/hermes/start.sh
 COPY docker/register_cron.sh /opt/hermes/register_cron.sh
-RUN mkdir -p /opt/hermes/logs && \
+RUN mkdir -p /opt/hermes/logs /opt/hermes/state && \
     chmod +x /opt/hermes/start.sh /opt/hermes/register_cron.sh
 
 CMD ["/opt/hermes/start.sh"]

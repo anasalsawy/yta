@@ -3,14 +3,11 @@
 set -eu
 cd /opt/hermes
 
-# The monitor script prints NEW_MESSAGES <json> only when new customer
-# messages arrived; unchanged output (empty) suppresses the agent run, so the
-# agent ONLY wakes up when there's something to handle. This is the stock
-# Hermes monitor-script pattern — no inventing a scheduler.
 hermes cron create \
   --name "yta-scan" \
   --schedule "every 1m" \
-  --monitor-script yta_poll.py \
+  --monitor-script /opt/hermes/scripts/yta_poll.py \
+  --workdir /opt/hermes \
   --deliver "telegram:${RESERVATIONS_TELEGRAM_CHAT_ID}" \
   "Process any NEW_MESSAGES per my operating instructions. For each new
    customer message: read context, respond as the agency using
