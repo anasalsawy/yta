@@ -22,7 +22,7 @@ hermes cron create \
       \`python scripts/yta_send.py <channel> <customer_id> '<text>'\`, or, if it
       needs a price/quote/booking or a decision you cannot make, tell the customer
       it is with our senior desk, record it with
-      \`python scripts/yta_escalations.py add <channel> <customer_id> "<name>" "<what you need>"\`
+      \`python scripts/yta_escalations.py add <channel> <customer_id> '<name>' '<what you need>'\`
       and escalate to me on Telegram; if the message
       genuinely needs no reply (e.g. 'ok thanks'), run
       \`python scripts/yta_send.py --no-reply <last_message_id>\`.
