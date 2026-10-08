@@ -7,3 +7,4 @@ model:
   provider: custom                 # OpenAI-compatible endpoint
   base_url: https://api.featherless.ai/v1
   default: zai-org/GLM-5.3-Flash
+  max_tokens: 4096                 # avoid finish_reason='length' truncation
