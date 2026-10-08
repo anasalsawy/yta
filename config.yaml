@@ -7,7 +7,7 @@ model:
   provider: custom                 # OpenAI-compatible endpoint
   base_url: https://api.featherless.ai/v1
   default: zai-org/GLM-5.3-Flash
-  max_tokens: 16384                # well above GLM's native cap → never truncate
+  max_tokens: 262144               # = GLM-5.3-Flash native output cap → never throttle/truncate
 
 # Full auto-approve: both cron ticks AND interactive Telegram turns run their
 # tools without a human-in-the-loop prompt. (Still protected by Hermes'
