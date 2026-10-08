@@ -25,6 +25,7 @@ COPY config.yaml /opt/hermes/config.yaml
 COPY prompts/system_prompt.md /opt/hermes/prompts/system_prompt.md
 COPY scripts/yta_poll.py /opt/hermes/scripts/yta_poll.py
 COPY scripts/yta_send.py /opt/hermes/scripts/yta_send.py
+COPY scripts/yta_check.py /opt/hermes/scripts/yta_check.py
 COPY docker/start.sh /opt/hermes/start.sh
 COPY docker/register_cron.sh /opt/hermes/register_cron.sh
 RUN mkdir -p /opt/hermes/logs /opt/hermes/state && \
