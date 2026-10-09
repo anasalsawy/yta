@@ -47,3 +47,14 @@ browser:
 # knows the customer and the context.
 cron:
   mirror_delivery: true
+
+# ClawLink: hosted OAuth integration plane (1,000+ apps). The deployed agent uses it to reach
+# leads OUTSIDE our inbox / page comments (e.g. facebook_send_message to a lead found elsewhere).
+# The API key is a Render env var (CLAWLINK_API_KEY) injected at boot by start.sh - never committed.
+mcp_servers:
+  clawlink:
+    url: "https://claw-link.dev/api/mcp"
+    headers:
+      x-clawlink-api-key: "__CLAWLINK_API_KEY__"
+    timeout: 180
+    connect_timeout: 60

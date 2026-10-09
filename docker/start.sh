@@ -20,5 +20,12 @@ echo "=== waiting threads at boot ==="
 python /opt/hermes/scripts/yta_poll.py 2>&1 | head -40 || echo "[boot] poller warned; continuing"
 
 # Run the gateway in the foreground: Telegram home + cron ticker + agent.
+# Inject the ClawLink API key (Render env secret) into the baked config before boot,
+# so the clawlink MCP server uses the real key. Repo never holds the value.
+if [ -n "${CLAWLINK_API_KEY:-}" ] && grep -q "__CLAWLINK_API_KEY__" /opt/hermes/config.yaml; then
+  _esc=$(printf '%s' "$CLAWLINK_API_KEY" | sed 's/[&/\\]/\\&/g')
+  sed -i "s/__CLAWLINK_API_KEY__/${_esc}/g" /opt/hermes/config.yaml
+  echo "=== injected CLAWLINK_API_KEY into config ==="
+fi
 echo "=== launching gateway (foreground) ==="
 exec hermes gateway run 2>&1 | tee -a /opt/hermes/logs/gateway.log

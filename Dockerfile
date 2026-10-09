@@ -26,6 +26,12 @@ RUN curl -fsSL https://hermes-agent.nousresearch.com/install.sh -o /tmp/install-
 # again: a crash loop that left customer messages waiting for many minutes.
 RUN hermes pm install --extra telegram --extra exa
 
+# ClawLink: hosted OAuth integration plane so the agent can post comments / send
+# Messenger messages to leads ELSEWHERE (not just our inbox). The MCP config block
+# (with the API key injected from env at boot) lives in config.yaml; the plugin is
+# what exposes the clawlink_* tools to the agent.
+RUN hermes plugins install ClawLink-HQ/hermes-plugin --enable
+
 # Bake the YTA config, system prompt, and scan/send scripts into the Hermes home.
 COPY config.yaml /opt/hermes/config.yaml
 # SOUL.md is the agent's identity for EVERY session - the 1-minute customer job and the Telegram
