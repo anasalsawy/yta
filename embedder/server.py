@@ -154,4 +154,45 @@ if __name__ == "__main__":
         "vector_dim": int(audio_vector.shape[1]),
         "peak_rss_mb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024),
     }), flush=True)
+    # Repeated warmed-up audio benchmark. This runs once per deploy using only
+    # synthesized speech; it does not access user data or any paid external API.
+    # Don't hard-fail the service if cross-modal ranking quality is poor; record
+    # the outcome so we can decide whether to use the model in Maya.
+    audio_trials_ms = []
+    for trial in range(3):
+        t0 = time.monotonic()
+        audio_embedding = MODEL.encode([{"audio": test_audio}],
+                                       normalize_embeddings=True, show_progress_bar=False)
+        audio_trials_ms.append(round((time.monotonic() - t0) * 1000))
+    print("AUDIO_WARM_BENCH", json.dumps({
+        "duration_s": round(len(test_audio)/16000, 2),
+        "warm_trials_ms": audio_trials_ms,
+        "warm_median_ms": sorted(audio_trials_ms)[len(audio_trials_ms)//2],
+        "warm_best_ms": min(audio_trials_ms),
+        "peak_rss_mb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024),
+    }), flush=True)
+    # Synthetic memory retrieval, comparing *audio* embeddings with text
+    # documents in the same vector space, no transcription involved.
+    import torch.nn.functional as F
+    sample_docs = [
+        "title: Garden project | text: The garden project password is cobalt seven.",
+        "title: Garden watering | text: The garden plants need more water.",
+        "title: Falcon project | text: The Falcon team meeting is on Thursday.",
+        "title: Cafe | text: The cafe is closed on Sundays.",
+    ]
+    ts = time.monotonic()
+    document_vectors = MODEL.encode(sample_docs, prompt_name="Document",
+                                    normalize_embeddings=True, show_progress_bar=False)
+    text_index_ms = round((time.monotonic()-ts)*1000)
+    similarities = np.asarray(document_vectors) @ np.asarray(audio_embedding[0])
+    order = np.argsort(-similarities).tolist()
+    print("AUDIO_TEXT_RETRIEVAL_SMOKE", json.dumps({
+        "text_index_ms": text_index_ms,
+        "top_document_index": int(order[0]),
+        "relevant_document_rank": int(order.index(0)+1),
+        "recall_at_1": bool(order[0] == 0),
+        "recall_at_3": bool(0 in order[:3]),
+        "scores": [round(float(n), 4) for n in similarities.tolist()],
+        "note": "One synthetic example; not a reliable retrieval accuracy benchmark",
+    }), flush=True)
     ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), Handler).serve_forever()
