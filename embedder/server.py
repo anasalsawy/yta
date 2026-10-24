@@ -126,4 +126,32 @@ if __name__ == "__main__":
     vector = MODEL.encode(["Readiness check"], normalize_embeddings=True, show_progress_bar=False)
     assert vector.shape == (1, 768)
     print("Embedder ready; peak RSS MB:", round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024), flush=True)
+    # Startup smoke test of the actual audio encoder on this Render CPU plan.
+    # Uses synthetic speech, not private user data or external inference APIs.
+    import subprocess
+    import soundfile as sf
+    import numpy as np
+    test_wav = "/tmp/embedding-audio-smoke.wav"
+    subprocess.run(["espeak-ng", "-s", "155", "-w", test_wav,
+                    "What was the garden project password?"],
+                   check=True, capture_output=True)
+    with sf.SoundFile(test_wav) as audio_f:
+        test_audio = audio_f.read(dtype="float32", always_2d=True).mean(axis=1)
+        test_rate = audio_f.samplerate
+    if test_rate != 16000:
+        from scipy.signal import resample_poly
+        from math import gcd
+        divisor = gcd(test_rate, 16000)
+        test_audio = resample_poly(test_audio, 16000 // divisor, test_rate // divisor).astype("float32")
+    started_audio = time.monotonic()
+    audio_vector = MODEL.encode([{"audio": test_audio}], normalize_embeddings=True,
+                                show_progress_bar=False)
+    audio_ms = round((time.monotonic() - started_audio) * 1000)
+    assert audio_vector.shape == (1, 768) and np.isfinite(audio_vector).all()
+    print("AUDIO_SMOKE_OK", json.dumps({
+        "duration_s": round(len(test_audio) / 16000, 2),
+        "inference_ms": audio_ms,
+        "vector_dim": int(audio_vector.shape[1]),
+        "peak_rss_mb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024),
+    }), flush=True)
     ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), Handler).serve_forever()
