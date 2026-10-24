@@ -195,4 +195,48 @@ if __name__ == "__main__":
         "scores": [round(float(n), 4) for n in similarities.tolist()],
         "note": "One synthetic example; not a reliable retrieval accuracy benchmark",
     }), flush=True)
+    # Extended CPU diagnostic: latency versus shorter speech and
+    # cross-modal retrieval across more than one synthetic question.
+    # Exceptions here should not prevent the API from starting.
+    try:
+        shorter_audio = test_audio[:16000]
+        t0 = time.monotonic()
+        short_vector = MODEL.encode([{"audio": shorter_audio}],
+                                    normalize_embeddings=True, show_progress_bar=False)
+        print("AUDIO_ONE_SECOND_BENCH", json.dumps({
+            "audio_seconds": 1.0,
+            "inference_ms": round((time.monotonic()-t0)*1000),
+            "vector_dim": int(short_vector.shape[1]),
+        }), flush=True)
+        extra_checks = [
+            ("When is the Falcon team meeting?", 2),
+            ("On which day is the cafe closed?", 3),
+            ("What do the garden plants need?", 1),
+        ]
+        ranks = [int(order.index(0)+1)]
+        latencies_ms = [audio_trials_ms[-1]]
+        for question, expected_index in extra_checks:
+            subprocess.run(["espeak-ng", "-s", "155", "-w", test_wav, question],
+                           check=True, capture_output=True)
+            with sf.SoundFile(test_wav) as af:
+                a = af.read(dtype="float32", always_2d=True).mean(axis=1)
+                sr = af.samplerate
+            if sr != 16000:
+                g = gcd(sr, 16000)
+                a = resample_poly(a, 16000//g, sr//g).astype("float32")
+            t0 = time.monotonic()
+            v = MODEL.encode([{"audio": a}], normalize_embeddings=True,
+                             show_progress_bar=False)[0]
+            latencies_ms.append(round((time.monotonic()-t0)*1000))
+            ranks.append(int(np.argsort(-(np.asarray(document_vectors) @ v)).tolist().index(expected_index)+1))
+        print("AUDIO_RETRIEVAL_EXTENDED", json.dumps({
+            "samples": len(ranks),
+            "relevant_document_ranks": ranks,
+            "recall_at_1": sum(r == 1 for r in ranks)/len(ranks),
+            "recall_at_3": sum(r <= 3 for r in ranks)/len(ranks),
+            "query_inference_ms": latencies_ms,
+            "note": "Four synthetic prompts against four synthetic documents only",
+        }), flush=True)
+    except Exception as exc:
+        print("AUDIO_DIAGNOSTIC_ERROR", type(exc).__name__, str(exc)[:300], flush=True)
     ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), Handler).serve_forever()
